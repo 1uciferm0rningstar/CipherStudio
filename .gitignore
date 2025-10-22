@@ -1,0 +1,55 @@
+# Dependencies
+node_modules/
+/.pnp
+.pnp.js
+
+# Testing
+/coverage
+
+# Production
+/build
+/dist
+
+# Misc
+.DS_Store
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# MongoDB
+/data/db
+
+# Workspace files (user-generated code)
+workspace/*.py
+workspace/*.js
+workspace/*.java
+workspace/*.cpp
+workspace/*.c
+workspace/*.html
+workspace/*.css
+workspace/*.php
+workspace/*.rb
+workspace/*.go
+workspace/temp_*
+
+# Keep workspace directory but ignore contents
+!workspace/.gitkeep
+
+# System
+Thumbs.db
+*.log
