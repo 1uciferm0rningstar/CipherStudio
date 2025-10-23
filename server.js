@@ -56,11 +56,38 @@ const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/vscode-clo
 mongoose.connect(MONGO_URI, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
-}).then(() => {
+}).then(async () => {
     console.log('📦 MongoDB Connected');
+    await createDefaultAdmin();
 }).catch((err) => {
     console.log('⚠️  MongoDB not connected (optional):', err.message);
 });
+
+// Create default admin user
+const createDefaultAdmin = async () => {
+    try {
+        const adminEmail = 'admin@admin.com';
+        const existingAdmin = await User.findOne({ email: adminEmail });
+        
+        if (!existingAdmin) {
+            const adminUser = new User({
+                username: 'admin',
+                email: adminEmail,
+                password: 'admin123' // This will be hashed automatically by the pre-save hook
+            });
+            
+            await adminUser.save();
+            console.log('✅ Default admin user created successfully');
+            console.log('📧 Email: admin@admin.com');
+            console.log('🔑 Password: admin123');
+            console.log('⚠️  Please change the password after first login!');
+        } else {
+            console.log('ℹ️  Admin user already exists');
+        }
+    } catch (error) {
+        console.log('⚠️  Error creating admin user:', error.message);
+    }
+};
 
 // File Schema (for cloud storage)
 const FileSchema = new mongoose.Schema({
