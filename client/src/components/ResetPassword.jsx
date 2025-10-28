@@ -1,36 +1,26 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
-import { FaCode, FaUser, FaEnvelope, FaLock, FaUserPlus, FaEye, FaEyeSlash } from 'react-icons/fa';
+import { useParams, useNavigate, Link } from 'react-router-dom';
+import { FaCode, FaLock, FaCheck, FaEye, FaEyeSlash } from 'react-icons/fa';
+import axios from 'axios';
 import './Auth.css';
 
-function Signup() {
-  const [username, setUsername] = useState('');
-  const [email, setEmail] = useState('');
+function ResetPassword() {
+  const { token } = useParams();
+  const navigate = useNavigate();
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  
-  const { register } = useAuth();
-  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setLoading(true);
 
-    // Validation
-    if (!username || !email || !password || !confirmPassword) {
+    if (!password || !confirmPassword) {
       setError('Please fill in all fields');
-      setLoading(false);
-      return;
-    }
-
-    if (username.length < 3) {
-      setError('Username must be at least 3 characters');
       setLoading(false);
       return;
     }
@@ -47,12 +37,18 @@ function Signup() {
       return;
     }
 
-    const result = await register(username, email, password);
-    
-    if (result.success) {
-      navigate('/editor');
-    } else {
-      setError(result.message);
+    try {
+      const response = await axios.post('http://localhost:5000/api/auth/reset-password', {
+        token,
+        password
+      });
+
+      if (response.data.success) {
+        alert('✅ Password reset successful! You can now login with your new password.');
+        navigate('/login');
+      }
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to reset password');
       setLoading(false);
     }
   };
@@ -71,8 +67,8 @@ function Signup() {
             <FaCode className="logo-icon" />
             <h1>CipherStudio</h1>
           </div>
-          <h2>Create Account</h2>
-          <p>Start your coding journey today</p>
+          <h2>Reset Password</h2>
+          <p>Enter your new password</p>
         </div>
 
         <form onSubmit={handleSubmit} className="auth-form">
@@ -83,36 +79,8 @@ function Signup() {
           )}
 
           <div className="form-group">
-            <label htmlFor="username">
-              <FaUser /> Username
-            </label>
-            <input
-              type="text"
-              id="username"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              placeholder="Choose a username"
-              required
-            />
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="email">
-              <FaEnvelope /> Email
-            </label>
-            <input
-              type="email"
-              id="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Enter your email"
-              required
-            />
-          </div>
-
-          <div className="form-group">
             <label htmlFor="password">
-              <FaLock /> Password
+              <FaLock /> New Password
             </label>
             <div className="password-input-wrapper">
               <input
@@ -120,7 +88,7 @@ function Signup() {
                 id="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Create a password (min 6 characters)"
+                placeholder="Enter new password (min 6 characters)"
                 required
               />
               <button
@@ -135,7 +103,7 @@ function Signup() {
 
           <div className="form-group">
             <label htmlFor="confirmPassword">
-              <FaLock /> Confirm Password
+              <FaCheck /> Confirm Password
             </label>
             <div className="password-input-wrapper">
               <input
@@ -143,7 +111,7 @@ function Signup() {
                 id="confirmPassword"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="Confirm your password"
+                placeholder="Confirm new password"
                 required
               />
               <button
@@ -159,11 +127,11 @@ function Signup() {
           <button type="submit" className="auth-btn" disabled={loading}>
             {loading ? (
               <>
-                <span className="spinner"></span> Creating Account...
+                <span className="spinner"></span> Resetting...
               </>
             ) : (
               <>
-                <FaUserPlus /> Sign Up
+                <FaCheck /> Reset Password
               </>
             )}
           </button>
@@ -171,7 +139,7 @@ function Signup() {
 
         <div className="auth-footer">
           <p>
-            Already have an account? <Link to="/login">Sign In</Link>
+            <Link to="/login">Back to Sign In</Link>
           </p>
         </div>
       </div>
@@ -179,4 +147,4 @@ function Signup() {
   );
 }
 
-export default Signup;
+export default ResetPassword;

@@ -5,6 +5,8 @@ import { AuthProvider } from './context/AuthContext'
 import App from './App'
 import Login from './components/Login'
 import Signup from './components/Signup'
+import ForgotPassword from './components/ForgotPassword'
+import ResetPassword from './components/ResetPassword'
 import ProtectedRoute from './components/ProtectedRoute'
 import './index.css'
 
@@ -15,6 +17,8 @@ ReactDOM.createRoot(document.getElementById('root')).render(
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password/:token" element={<ResetPassword />} />
           <Route 
             path="/editor" 
             element={

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { FaCode, FaEnvelope, FaLock, FaSignInAlt } from 'react-icons/fa';
+import { FaCode, FaEnvelope, FaLock, FaSignInAlt, FaEye, FaEyeSlash } from 'react-icons/fa';
 import './Auth.css';
 
 function Login() {
@@ -9,6 +9,7 @@ function Login() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   
   const { login } = useAuth();
   const navigate = useNavigate();
@@ -77,14 +78,23 @@ function Login() {
             <label htmlFor="password">
               <FaLock /> Password
             </label>
-            <input
-              type="password"
-              id="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Enter your password"
-              required
-            />
+            <div className="password-input-wrapper">
+              <input
+                type={showPassword ? "text" : "password"}
+                id="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Enter your password"
+                required
+              />
+              <button
+                type="button"
+                className="password-toggle"
+                onClick={() => setShowPassword(!showPassword)}
+              >
+                {showPassword ? <FaEyeSlash /> : <FaEye />}
+              </button>
+            </div>
           </div>
 
           <button type="submit" className="auth-btn" disabled={loading}>
@@ -98,6 +108,12 @@ function Login() {
               </>
             )}
           </button>
+
+          <div style={{ textAlign: 'center', marginTop: '15px' }}>
+            <Link to="/forgot-password" style={{ color: '#667eea', fontSize: '14px', textDecoration: 'none' }}>
+              Forgot Password?
+            </Link>
+          </div>
         </form>
 
         <div className="auth-footer">

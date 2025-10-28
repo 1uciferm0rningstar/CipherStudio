@@ -9,7 +9,9 @@ const util = require('util');
 const jwt = require('jsonwebtoken');
 const session = require('express-session');
 const User = require('./models/User');
+const crypto = require('crypto');
 const execPromise = util.promisify(exec);
+require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -17,7 +19,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-producti
 
 // Middleware
 app.use(cors({
-    origin: 'http://localhost:3001',
+    origin: 'http://localhost:3000',
     credentials: true
 }));
 app.use(bodyParser.json({ limit: '50mb' }));
@@ -52,42 +54,27 @@ const initWorkspace = async () => {
 };
 
 // MongoDB Connection (optional - for saving projects)
-const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/vscode-clone';
-mongoose.connect(MONGO_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-}).then(async () => {
-    console.log('📦 MongoDB Connected');
-    await createDefaultAdmin();
-}).catch((err) => {
-    console.log('⚠️  MongoDB not connected (optional):', err.message);
-});
+const MONGO_URI = process.env.MONGO_URI || 'mongodb+srv://Cipher_Studios:Cipher123@cluster0.rhypb9m.mongodb.net/cipherstudio?retryWrites=true&w=majority';
+mongoose.connect(MONGO_URI)
+    .then(async () => {
+        console.log('📦 MongoDB Connected Successfully');
+        console.log('🌐 Database:', mongoose.connection.name);
+    })
+    .catch((err) => {
+        console.log('❌ MongoDB Connection Failed');
+        console.log('⚠️  Error:', err.message);
+        console.log('⚠️  Please check:');
+        console.log('   1. Your IP address is whitelisted in MongoDB Atlas');
+        console.log('   2. MongoDB credentials are correct');
+        console.log('   3. You have internet connection');
+        console.log('\n🔗 To whitelist your IP:');
+        console.log('   - Go to https://cloud.mongodb.com');
+        console.log('   - Navigate to Network Access');
+        console.log('   - Click "Add IP Address"');
+        console.log('   - Add your current IP or use 0.0.0.0/0 for testing\n');
+    });
 
-// Create default admin user
-const createDefaultAdmin = async () => {
-    try {
-        const adminEmail = 'admin@admin.com';
-        const existingAdmin = await User.findOne({ email: adminEmail });
-        
-        if (!existingAdmin) {
-            const adminUser = new User({
-                username: 'admin',
-                email: adminEmail,
-                password: 'admin123' // This will be hashed automatically by the pre-save hook
-            });
-            
-            await adminUser.save();
-            console.log('✅ Default admin user created successfully');
-            console.log('📧 Email: admin@admin.com');
-            console.log('🔑 Password: admin123');
-            console.log('⚠️  Please change the password after first login!');
-        } else {
-            console.log('ℹ️  Admin user already exists');
-        }
-    } catch (error) {
-        console.log('⚠️  Error creating admin user:', error.message);
-    }
-};
+
 
 // File Schema (for cloud storage)
 const FileSchema = new mongoose.Schema({
@@ -125,20 +112,34 @@ const authenticateToken = (req, res, next) => {
 // Register
 app.post('/api/auth/register', async (req, res) => {
     try {
+        // Check if MongoDB is connected
+        if (mongoose.connection.readyState !== 1) {
+            console.log('⚠️  Registration blocked: MongoDB not connected');
+            return res.status(503).json({ 
+                success: false, 
+                message: 'Database is currently unavailable. Please ensure your IP is whitelisted in MongoDB Atlas and try again.' 
+            });
+        }
+        
+        console.log('📝 Registration attempt:', { username: req.body.username, email: req.body.email });
         const { username, email, password } = req.body;
         
         // Validation
         if (!username || !email || !password) {
+            console.log('❌ Validation failed: Missing fields');
             return res.status(400).json({ success: false, message: 'All fields are required' });
         }
         
         if (password.length < 6) {
+            console.log('❌ Validation failed: Password too short');
             return res.status(400).json({ success: false, message: 'Password must be at least 6 characters' });
         }
         
         // Check if user exists
+        console.log('🔍 Checking for existing user...');
         const existingUser = await User.findOne({ $or: [{ email }, { username }] });
         if (existingUser) {
+            console.log('❌ User already exists');
             return res.status(400).json({ 
                 success: false, 
                 message: existingUser.email === email ? 'Email already registered' : 'Username already taken' 
@@ -146,11 +147,16 @@ app.post('/api/auth/register', async (req, res) => {
         }
         
         // Create user
+        console.log('✨ Creating new user...');
         const user = new User({ username, email, password });
+        console.log('💾 Saving user to database...');
         await user.save();
+        console.log('✅ User saved successfully');
         
         // Generate token
+        console.log('🔑 Generating JWT token...');
         const token = jwt.sign({ id: user._id, username: user.username }, JWT_SECRET, { expiresIn: '24h' });
+        console.log('✅ Registration successful for:', username);
         
         res.status(201).json({
             success: true,
@@ -163,13 +169,29 @@ app.post('/api/auth/register', async (req, res) => {
             }
         });
     } catch (error) {
-        res.status(500).json({ success: false, message: 'Server error', error: error.message });
+        console.error('❌ Registration error:', error);
+        console.error('Error details:', error.message);
+        console.error('Stack trace:', error.stack);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Database connection error. Please ensure your IP is whitelisted in MongoDB Atlas.', 
+            error: error.message 
+        });
     }
 });
 
 // Login
 app.post('/api/auth/login', async (req, res) => {
     try {
+        // Check if MongoDB is connected
+        if (mongoose.connection.readyState !== 1) {
+            console.log('⚠️  Login blocked: MongoDB not connected');
+            return res.status(503).json({ 
+                success: false, 
+                message: 'Database is currently unavailable. Please ensure your IP is whitelisted in MongoDB Atlas and try again.' 
+            });
+        }
+        
         const { email, password } = req.body;
         
         // Validation
@@ -203,7 +225,11 @@ app.post('/api/auth/login', async (req, res) => {
             }
         });
     } catch (error) {
-        res.status(500).json({ success: false, message: 'Server error', error: error.message });
+        res.status(500).json({ 
+            success: false, 
+            message: 'Database connection error. Please ensure your IP is whitelisted in MongoDB Atlas.', 
+            error: error.message 
+        });
     }
 });
 
@@ -225,6 +251,101 @@ app.get('/api/auth/verify', authenticateToken, async (req, res) => {
         });
     } catch (error) {
         res.status(500).json({ success: false, message: 'Server error' });
+    }
+});
+
+// Forgot Password - Request Reset
+app.post('/api/auth/forgot-password', async (req, res) => {
+    try {
+        // Check if MongoDB is connected
+        if (mongoose.connection.readyState !== 1) {
+            console.log('⚠️  Forgot password blocked: MongoDB not connected');
+            return res.status(503).json({ 
+                success: false, 
+                message: 'Database is currently unavailable. Please ensure your IP is whitelisted in MongoDB Atlas and try again.' 
+            });
+        }
+        
+        const { email } = req.body;
+        
+        if (!email) {
+            return res.status(400).json({ success: false, message: 'Email is required' });
+        }
+        
+        const user = await User.findOne({ email });
+        if (!user) {
+            // Don't reveal if user exists or not for security
+            return res.json({ success: true, message: 'If an account exists, a password reset link has been sent' });
+        }
+        
+        // Generate reset token
+        const resetToken = crypto.randomBytes(32).toString('hex');
+        user.resetPasswordToken = crypto.createHash('sha256').update(resetToken).digest('hex');
+        user.resetPasswordExpires = Date.now() + 120000; // 2 minutes
+        await user.save();
+        
+        // Create reset URL (in production, use your domain)
+        const resetUrl = `http://localhost:3000/reset-password/${resetToken}`;
+        
+        console.log('🔑 Password Reset Token Generated');
+        console.log('📧 Email:', email);
+        console.log('🔗 Reset URL:', resetUrl);
+        console.log('⏰ Expires in 2 minutes');
+        
+        // For development, we'll just log the URL
+        // In production, you would send an email here
+        
+        res.json({ 
+            success: true, 
+            message: 'Password reset link has been sent to your email',
+            resetUrl: resetUrl // Remove this in production
+        });
+        
+    } catch (error) {
+        console.error('❌ Forgot password error:', error);
+        res.status(500).json({ success: false, message: 'Server error', error: error.message });
+    }
+});
+
+// Reset Password - Verify Token and Update Password
+app.post('/api/auth/reset-password', async (req, res) => {
+    try {
+        const { token, password } = req.body;
+        
+        if (!token || !password) {
+            return res.status(400).json({ success: false, message: 'Token and password are required' });
+        }
+        
+        if (password.length < 6) {
+            return res.status(400).json({ success: false, message: 'Password must be at least 6 characters' });
+        }
+        
+        // Hash the token from URL to compare with database
+        const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+        
+        // Find user with valid token
+        const user = await User.findOne({
+            resetPasswordToken: hashedToken,
+            resetPasswordExpires: { $gt: Date.now() }
+        });
+        
+        if (!user) {
+            return res.status(400).json({ success: false, message: 'Invalid or expired reset token' });
+        }
+        
+        // Update password
+        user.password = password;
+        user.resetPasswordToken = null;
+        user.resetPasswordExpires = null;
+        await user.save();
+        
+        console.log('✅ Password reset successful for:', user.email);
+        
+        res.json({ success: true, message: 'Password has been reset successfully' });
+        
+    } catch (error) {
+        console.error('❌ Reset password error:', error);
+        res.status(500).json({ success: false, message: 'Server error', error: error.message });
     }
 });
 
