@@ -90,6 +90,46 @@ const File = mongoose.model('File', FileSchema);
 
 // Routes
 
+// Root route - Health check
+app.get('/', (req, res) => {
+    res.json({
+        success: true,
+        message: 'CipherStudio API is running',
+        status: 'healthy',
+        timestamp: new Date().toISOString(),
+        endpoints: {
+            auth: {
+                register: 'POST /api/auth/register',
+                login: 'POST /api/auth/login',
+                verify: 'GET /api/auth/verify',
+                forgotPassword: 'POST /api/auth/forgot-password',
+                resetPassword: 'POST /api/auth/reset-password'
+            },
+            files: {
+                list: 'GET /api/files',
+                read: 'GET /api/files/read',
+                save: 'POST /api/files/save',
+                create: 'POST /api/files/create',
+                delete: 'DELETE /api/files/delete',
+                rename: 'PUT /api/files/rename'
+            },
+            execution: {
+                run: 'POST /api/execute'
+            }
+        }
+    });
+});
+
+// Health check endpoint
+app.get('/health', (req, res) => {
+    res.json({
+        status: 'healthy',
+        database: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
+        uptime: process.uptime(),
+        timestamp: new Date().toISOString()
+    });
+});
+
 // Authentication Middleware
 const authenticateToken = (req, res, next) => {
     const token = req.headers['authorization']?.split(' ')[1];
