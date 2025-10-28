@@ -4,6 +4,8 @@ import { FaCode, FaLock, FaCheck, FaEye, FaEyeSlash } from 'react-icons/fa';
 import axios from 'axios';
 import './Auth.css';
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
 function ResetPassword() {
   const { token } = useParams();
   const navigate = useNavigate();
@@ -38,7 +40,7 @@ function ResetPassword() {
     }
 
     try {
-      const response = await axios.post('http://localhost:5000/api/auth/reset-password', {
+      const response = await axios.post(`${API_URL}/api/auth/reset-password`, {
         token,
         password
       });

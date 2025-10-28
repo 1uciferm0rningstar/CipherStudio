@@ -19,7 +19,9 @@ const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-producti
 
 // Middleware
 app.use(cors({
-    origin: 'http://localhost:3000',
+    origin: process.env.NODE_ENV === 'production' 
+        ? process.env.FRONTEND_URL || '*'
+        : 'http://localhost:3000',
     credentials: true
 }));
 app.use(bodyParser.json({ limit: '50mb' }));

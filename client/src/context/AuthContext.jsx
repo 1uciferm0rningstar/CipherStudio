@@ -3,6 +3,9 @@ import axios from 'axios';
 
 const AuthContext = createContext();
 
+// API base URL - use environment variable or fallback to localhost
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
@@ -21,7 +24,7 @@ export const AuthProvider = ({ children }) => {
     const verifyToken = async () => {
       if (token) {
         try {
-          const response = await axios.get('http://localhost:5000/api/auth/verify', {
+          const response = await axios.get(`${API_URL}/api/auth/verify`, {
             headers: { Authorization: `Bearer ${token}` }
           });
           
@@ -45,7 +48,7 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     try {
-      const response = await axios.post('http://localhost:5000/api/auth/login', {
+      const response = await axios.post(`${API_URL}/api/auth/login`, {
         email,
         password
       });
@@ -67,7 +70,7 @@ export const AuthProvider = ({ children }) => {
 
   const register = async (username, email, password) => {
     try {
-      const response = await axios.post('http://localhost:5000/api/auth/register', {
+      const response = await axios.post(`${API_URL}/api/auth/register`, {
         username,
         email,
         password
